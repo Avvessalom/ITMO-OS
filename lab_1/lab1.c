@@ -9,6 +9,8 @@
 #define MEMORYSIZE 221 * 1024 * 1024
 #define MEMORYSTART 0xF8555978
 #define THREADRANDOM 92
+#define FILESSIZE 133 * 1024 * 1024
+#define IOBLOCK 62
 
 void work_with_memory(){
     void* memory_pointer = (void*) MEMORYSTART;
@@ -28,19 +30,23 @@ void work_with_memory(){
 
     munmap((void*) MEMORYSTART, MEMORYSIZE);
     getchar();
+    work_with_file(memory_pointer);
 }
 
 void write_to_memory(void* memory_pointer) {
     uint64_t total = MEMORYSIZE;
     uint64_t block = total / THREADRANDOM; 
     pthread_t thread_id;
+    void* new_memory_pointer;
     for (uint8_t i = 0; i < THREADRANDOM; i++){
         struct write_to_memory_piece *piece = malloc(sizeof(struct write_to_memory_piece));
-        piece->memory_pointer = memory_pointer;
+        new_memory_pointer = memory_pointer + i;
+        piece->memory_pointer = new_memory_pointer;
         piece->size = block;
         piece->start = total;
 
         pthread_create(&thread_id, NULL, write_thread, piece);
+        free(piece);
     }
     pthread_join(thread_id, NULL);
 }
@@ -51,6 +57,27 @@ void *write_thread(void *arg){
     fread((piece->memory_pointer + piece->start), 1, piece->size, urand);
     return 0;
 }
+/*
+Записывает область памяти в файлы одинакового размера E (133) мегабайт
+с использованием F=(блочного) обращения к диску.
+Размер блока ввода-вывода G (62) байт. Преподаватель выдает в качестве
+задания последовательность записи/чтения блоковпоследовательный
+*/
+void work_with_file(void* memory_pointer){
+    int files_count = ((MEMORYSIZE) / (FILESSIZE)) + 1;
+    for (uint64_t i = 0; i < files_count; i++){
+        char* filename = make_filename(i);
+        FILE *f = fopen(filename, "wb");
+        write_from_memory_to_file(f, memory_pointer);
+    }
+    
+}
+
+void write_from_memory_to_file(FILE *file, void* memory_pointer){
+    for (uint64_t counter = 0; counter < FILESSIZE; counter += IOBLOCK){
+        fwrite(memory_pointer + counter, sizeof(uint8_t), IOBLOCK, file);
+    }
+}
 
 
 int main(int argc, char *argv[]){
@@ -58,3 +85,20 @@ int main(int argc, char *argv[]){
     return 0;
 }
 
+char* make_filename(int name){
+    switch (name)
+    {
+    case 1:
+        return "./first.txt";
+    case 2:
+        return "./second.txt";
+    case 3:
+        return "./third.txt";
+    case 4:
+        return "./forth.txt";
+    case 5:
+        return "./fiveth.txt";
+    default:
+        return "./jopa.txt";
+    }
+}
