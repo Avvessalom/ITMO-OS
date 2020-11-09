@@ -14,7 +14,6 @@ void *aggreggate_state(void* arg);
 struct write_to_memory_piece {
     void* memory_pointer;
     uint64_t size;
-    uint64_t start;
 };
 
 struct agr_state{

@@ -23,16 +23,15 @@ void* work_with_memory(){
     if (memory_pointer == MAP_FAILED){
         printf("Mapping Failed\n");
     }
-    printf("%X", memory_pointer);
     char flag;
-    while ((flag = getchar() !='\n' && flag != EOF));
-        printf("Press Enter to continue\n");
-        getchar();
+    printf("Memory after allocation, Make a memory check Press Enter to continue.\n");
+    getchar();
     write_to_memory(memory_pointer);
-    printf("after random now");
+    printf("Memory filled with random values. Make a memory check and Press Enter.\n");
     getchar();
 
     munmap((void*) MEMORYSTART, MEMORYSIZE);
+    printf("End of work with memory. Make a memory check and Press Enter.\n");
     getchar();
     return memory_pointer;
     // work_with_file(memory_pointer);
@@ -40,26 +39,36 @@ void* work_with_memory(){
 
 void write_to_memory(void* memory_pointer) {
     uint64_t total = MEMORYSIZE;
-    uint64_t block = total / THREADRANDOM; 
-    pthread_t thread_id;
-    void* new_memory_pointer;
+    uint64_t block = total / THREADRANDOM;
+    pthread_t thread_id[THREADRANDOM];
+    struct write_to_memory_piece piece[THREADRANDOM];
     for (uint8_t i = 0; i < THREADRANDOM; i++){
-        struct write_to_memory_piece *piece = malloc(sizeof(struct write_to_memory_piece));
-        new_memory_pointer = memory_pointer + i;
-        piece->memory_pointer = new_memory_pointer;
-        piece->size = block;
-        piece->start = total;
+        piece[i].memory_pointer = memory_pointer + i * block;
+        piece[i].size = block;
 
-        pthread_create(&thread_id, NULL, write_thread, piece);
-        free(piece);
+        pthread_create(thread_id + i, NULL, write_thread, piece + i);
     }
-    pthread_join(thread_id, NULL);
+
+    for (uint8_t i = 0; i < THREADRANDOM; ++i) {
+    	pthread_join(thread_id[i], NULL);
+    }
 }
 
 void *write_thread(void *arg){
     struct write_to_memory_piece *piece = (struct write_to_memory_piece*) arg;
-    FILE *urand = fopen("/dev/urandom", "r");
-    fread((piece->memory_pointer + piece->start), 1, piece->size, urand);
+    FILE *urand = fopen("/dev/urandom", "rb");
+    int result = fread(piece->memory_pointer, 1, piece->size, urand);
+    if (!result) {
+	    if (feof(urand)) {
+	    printf("oaoaoaoa mmmmmm eof\n");
+	    exit(-1);
+	    }
+
+	    if (ferror(urand)) {
+	    perror("oaoaoaoa mmmmmm");
+	    exit(-6);
+	    }
+    }
     fclose(urand);
 
     return 0;
@@ -71,13 +80,17 @@ void *write_thread(void *arg){
 задания последовательность записи/чтения блоковпоследовательный
 */
 void work_with_file(void* memory_pointer){
+    printf("Start of work with files. Press Enter to continue\n");
+    getchar();
     uint64_t files_count = ((MEMORYSIZE) / (FILESSIZE)) + 1;
     for (uint64_t i = 0; i < files_count; i++){
         char* filename = make_filename(i);
         FILE *f = fopen(filename, "wb");
         write_from_memory_to_file(f, memory_pointer);
     }
-    
+    printf("End of work with files. Press Enter to continue\n");
+    getchar();
+
 }
 
 void write_from_memory_to_file(FILE *file, void* memory_pointer){
@@ -92,18 +105,19 @@ void write_from_memory_to_file(FILE *file, void* memory_pointer){
 агрегированные характеристики данных - J=(максимальное).
 */
 void work_with_threads(){
+    printf("Start of work with threads. Press Enter to continue\n");
+    getchar();
     uint64_t files_count = ((MEMORYSIZE) / (FILESSIZE)) + 1;
-        for (uint64_t i = 0; i < files_count; i++){
+    for (uint64_t i = 0; i < files_count; i++){
         char* filename = make_filename(i);
         FILE *f = fopen(filename, "rb");
         max_in_file_reader_thread(f);
-        fclose(f);
     }
 }
 
 void max_in_file_reader_thread(FILE *file){
-    void* results = malloc(THREADREAD * sizeof(uint64_t));
-    int64_t max = INT64_MIN;
+    void* results[THREADREAD];
+    int8_t max = INT8_MIN;
     uint64_t *results_ptr;
     pthread_t thread_id[THREADREAD];
     uint64_t size = (FILESSIZE) / THREADREAD;
@@ -116,31 +130,35 @@ void max_in_file_reader_thread(FILE *file){
         state->off = offset;
         pthread_create(&(thread_id[i]), NULL, aggreggate_state, state);
         offset += size;
-
-        for (uint8_t i = 0; i < THREADREAD; i++){
-            pthread_join(thread_id[i], results+(i*sizeof(uint64_t)));
-        }
-        results_ptr = results;
-        for (uint8_t i = 0; i < THREADREAD; i++){
-            if (max < results_ptr[i]) max = results_ptr[i];
-        }
     }
-    printf("files data max -> %"PRId64"\n", max);
+    int locked_file = fileno(file);
+    flock(locked_file, LOCK_UN);
+    for (uint8_t i = 0; i < THREADREAD - 1; i++){
+            pthread_join(thread_id[i], results + i);
+        }
+    results_ptr = results;
+    for (uint8_t i = 0; i < THREADREAD; i++){
+        if (max < (int8_t) results_ptr[i]) max = results_ptr[i];
+    }
+    printf("files data max -> %d\n", max);
 }
 
-void *aggreggate_state(void* arg){
-    struct agr_state * state = (struct agr_state*) arg;
-    int64_t max = INT64_MIN;
-    uint8_t point = 0;
+void * aggreggate_state(void* arg) {
+    struct agr_state * state = arg;
+    int8_t max = INT8_MIN;
+    int8_t point = 0;
+    int locked_file = fileno(state->fd);
     //block io
-    flock(state->fd, LOCK_EX);
+    flock(locked_file, LOCK_EX|LOCK_NB);
     fseek(state->fd, state->off, SEEK_SET);
-    for (uint64_t i = 0; i != state->size; i++){
+    for (uint64_t i = 0; i < state->size; ++i) {
         point = fgetc(state->fd);
-        if (point > max){max = point;}
+        if (max < point) {
+            max = point;
+        }
     }
     //unblock io
-    flock(state->fd,LOCK_UN);
+    flock(locked_file,LOCK_UN);
     return (void*)max;
 }
 /*
@@ -149,19 +167,19 @@ void *aggreggate_state(void* arg){
 */
 
 int main(int argc, char *argv[]){
+    printf("Memory before allocation. Make a memory check Press Enter to continue.\n");
+    getchar();
     void* pointer;
     pointer = work_with_memory();
     // while (1){
         work_with_file(pointer);
     // }
-    printf("THREADS");
     work_with_threads();
     return 0;
 }
 
 char* make_filename(int name){
-    switch (name)
-    {
+    switch (name) {
     case 0:
         return "./first.txt";
     case 1:

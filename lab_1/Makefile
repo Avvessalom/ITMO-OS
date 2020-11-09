@@ -4,7 +4,7 @@ DELETE = rm -rf
 OUT = a.out
 THREADFLAG = -lpthread
 all:
-	$(CC) $(SRC) $(THREADFLAG)
+	$(CC) -g -O0 $(SRC) $(THREADFLAG)
 	./$(OUT)
 clear:
-	$(DELETE) $(OUT) 
+	$(DELETE) $(OUT) *.txt
