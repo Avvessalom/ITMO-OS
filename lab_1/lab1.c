@@ -94,7 +94,7 @@ void work_with_file(void* memory_pointer){
 
 void write_from_memory_to_file(FILE *file, void* memory_pointer){
     for (uint64_t counter = 0; counter < FILESSIZE; counter += IOBLOCK){
-        fwrite((uint64_t*)memory_pointer + counter, sizeof(uint8_t), IOBLOCK, file);
+        fwrite((uint8_t*)memory_pointer + counter, sizeof(uint8_t), IOBLOCK, file);
     }
     fclose(file);
 }
