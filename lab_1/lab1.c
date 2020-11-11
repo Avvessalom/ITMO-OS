@@ -17,11 +17,12 @@
 #define K flock
 
 void* work_with_memory(){
-    void* memory_pointer = (void*) MEMORYSTART;
-    memory_pointer = mmap((void*) memory_pointer, MEMORYSIZE,
+    void* memory_pointer;
+    memory_pointer = mmap((void*) MEMORYSTART, MEMORYSIZE,
      PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
     if (memory_pointer == MAP_FAILED){
         printf("Mapping Failed\n");
+        return (void*) 1;
     }
     printf("Memory after allocation, Make a memory check Press Enter to continue.\n");
     getchar();
@@ -33,7 +34,6 @@ void* work_with_memory(){
     printf("End of work with memory. Make a memory check and Press Enter.\n");
     getchar();
     return memory_pointer;
-    // work_with_file(memory_pointer);
 }
 
 void write_to_memory(void* memory_pointer) {
@@ -83,7 +83,7 @@ void work_with_file(void* memory_pointer){
     getchar();
     uint64_t files_count = ((MEMORYSIZE) / (FILESSIZE)) + 1;
     for (uint64_t i = 0; i < files_count; i++){
-        char* filename = make_filename(i);
+        const char* filename = make_filename(i);
         FILE *f = fopen(filename, "wb");
         write_from_memory_to_file(f, memory_pointer);
     }
@@ -108,7 +108,7 @@ void work_with_threads(){
     getchar();
     uint64_t files_count = ((MEMORYSIZE) / (FILESSIZE)) + 1;
     for (uint64_t i = 0; i < files_count; i++){
-        char* filename = make_filename(i);
+        const char* filename = make_filename(i);
         FILE *f = fopen(filename, "rb");
         max_in_file_reader_thread(f);
     }
@@ -149,14 +149,23 @@ void * aggreggate_state(void* arg) {
     //block io
     flock(locked_file, LOCK_EX|LOCK_NB);
     fseek(state->fd, state->off, SEEK_SET);
-    for (uint64_t i = 0; i < state->size; ++i) {
-        point = fgetc(state->fd);
-        if (max < point) {
-            max = point;
-        }
+
+    long fSize = ftell(state->fd);
+    char * buffer = (char*) malloc(sizeof(char) * fSize);
+    if (buffer == NULL) {
+        fputs("Memory Error\n", stderr);
+        exit(1);
     }
     //unblock io
     flock(locked_file,LOCK_UN);
+    
+    for (uint64_t i = 0; i < state->size; ++i) {
+        point = *buffer;
+        if (max < point) {
+            max = point;
+        }
+        *buffer += (uint8_t) 1;
+    }
     return (void*)max;
 }
 /*
@@ -176,7 +185,7 @@ int main(int argc, char *argv[]){
     return 0;
 }
 
-char* make_filename(int name){
+const char* make_filename(int name){
     switch (name) {
     case 0:
         return "./first.txt";

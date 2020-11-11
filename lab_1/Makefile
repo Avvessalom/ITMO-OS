@@ -1,11 +1,12 @@
 SRC = lab1.c
 CC = gcc
 DELETE = rm -rf
-OUT = a.out
-THREADFLAG = -lpthread
+OUT = lab1.out
+LIBS = -lpthread
 FLAGS = -Wall -Werror -Wpedantic
 all:
-	$(CC) $(FLAGS) $(SRC) $(THREADFLAG) 
+	$(CC) $(FLAGS) -o $(OUT) $(SRC) $(LIBS) 
+start:
 	./$(OUT)
-clear:
+clean:
 	$(DELETE) $(OUT) *.txt
