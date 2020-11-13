@@ -103,5 +103,4 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
         то в качестве arg можно указать NULL.
         * Аргумент attr также является бестиповым указателем атрибутов потока pthread_attr_t.
         Если этот аргумент равен NULL, то поток создается с атрибутами по умолчанию
-        
-15. 
+  
