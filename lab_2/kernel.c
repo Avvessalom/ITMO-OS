@@ -1,23 +1,31 @@
-void kmain(void)
-{
-    const char *str = "empty kernel, second try";
-    char *vidptr = (char*)0xb8000;
-    unsigned int i = 0;
-    unsigned int j = 0;
+#define LINES 25
+#define COLUMNS_IN_LINE 80
+#define BYTES_FOR_EACH_ELEMENT 2
+#define SCREENSIZE BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE * LINES
 
-    while(j < 80 * 25 * 2) {
-        vidptr[j] = ' ';
-        vidptr[j+1] = 0x07;         
-        j = j + 2;
-    }
+char *vidptr = (char*)0xb8000; // начало видеопамяти
+unsigned int current_loc = 0; // палочка указателя
 
-    j = 0;
 
-    while(str[j] != '\0') {
-        vidptr[i] = str[j];
-        vidptr[i+1] = 0x07;
-        ++j;
-        i = i + 2;
-    }
-    return;
+void kprint(const char *str){
+	unsigned int i = 0;
+	while (str[i] != '\0') {
+		vidptr[current_loc++] = str[i++];
+		vidptr[current_loc++] = 0x07;
+	}
+}
+
+void clear_screen(void){
+	unsigned int i = 0;
+	while (i < SCREENSIZE) {
+		vidptr[i++] = ' ';
+		vidptr[i++] = 0x07;
+	}
+}
+
+void kmain(void){
+    const char *str = "test keyboard part";
+    clear_screen();
+    kprint(str);
+
 }

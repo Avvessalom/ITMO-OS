@@ -5,3 +5,6 @@ all:
 
 start:
 	qemu-system-i386 -kernel kernel
+
+clear:
+	rm -rf *.o kernel
