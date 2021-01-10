@@ -4,10 +4,10 @@
 #define SCREENSIZE BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE * LINES
 
 char *vidptr = (char*)0xb8000; // начало видеопамяти
-unsigned int current_loc = 0; // палочка указателя
+unsigned int current_loc = 0; // каретка указателя
 
 
-void kprint(const char *str){
+void print(const char *str){
 	unsigned int i = 0;
 	while (str[i] != '\0') {
 		vidptr[current_loc++] = str[i++];
@@ -23,9 +23,17 @@ void clear_screen(void){
 	}
 }
 
-void kmain(void){
+void print_newline(void)
+{
+	unsigned int line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
+	current_loc = current_loc + (line_size - current_loc % (line_size));
+}
+
+void kernel_main(void){
     const char *str = "test keyboard part";
     clear_screen();
-    kprint(str);
+    print_newline();
+    print_newline();
+    print(str);
 
 }
