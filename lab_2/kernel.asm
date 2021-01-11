@@ -7,7 +7,35 @@ section .text
         dd - (0x1BADB002 + 0x00) ;checksum
 
 global start
+global read_port
+global write_port
+global load_interrupt
+global keyboard_handler
+
+
 extern kernel_main
+
+read_port:
+  mov edx, [esp + 4]
+  in al, dx
+  ret
+
+write_port:
+  mov edx, [esp + 4]
+  mov al, [esp + 4 + 4]
+  out dx, al
+  ret
+
+
+load_interrupt:
+  mov edx, [esp + 4]
+  lidt [edx]
+  sti
+  ret
+
+keyboard_handler:
+  call keyboard_handler
+  iretd
 
 start:
   cli
