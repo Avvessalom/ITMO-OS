@@ -1,7 +1,8 @@
 #include "kernel.h"
+#include "keyboard.c"
 
-char *vidptr = (char*)VIDEO_START; // начало видеопамяти
-unsigned int current_loc = 0; // каретка указателя
+// char *vidptr = (char*)VIDEO_START; // начало видеопамяти
+// unsigned int current_loc = 0; // каретка указателя
 
 
 void print(const char *str){
@@ -20,17 +21,17 @@ void clear_screen(void){
 	}
 }
 
-void print_newline(void)
-{
-	unsigned int line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
-	current_loc = current_loc + (line_size - current_loc % (line_size));
-}
+
 
 void kernel_main(void){
     const char *str = "test keyboard part";
     clear_screen();
-    print_newline();
-    print_newline();
     print(str);
+    print_newline();
+    print_newline();
 
+	idt_init();
+	kb_init();
+	while (1);
+	
 }
