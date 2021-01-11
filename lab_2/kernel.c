@@ -22,7 +22,6 @@ void clear_screen(void){
 }
 
 
-
 void kernel_main(void){
     const char *str = "test keyboard part";
     clear_screen();

@@ -1,4 +1,4 @@
-bits 32
+[bits 16]
 section .text
         align 4
         dd 0x1BADB002            ;magic
@@ -13,6 +13,7 @@ global load_idt
 
 extern kernel_main
 extern keyboard_handler_main
+extern clear_screen
 
 read_port:
 	mov edx, [esp + 4]
@@ -37,9 +38,55 @@ keyboard_handler:
 
 start:
   cli
+  xor ax, ax
+  mov ds, ax
+  lgdt[gdt_descriptor]
+  mov eax, cr0
+  or eax, 0x1
+  mov cr0, eax
+  jmp protected
+
+
+protected:
+  mov ax, 0
+  mov ds, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
+  sti
+  cli
   mov esp, stack_space
   call kernel_main
   hlt
+  
+gdt_start:
+
+gdt_null:
+  dd 0x0
+  dd 0x0
+
+gdt_code:
+  dw 0xffff
+  dw 0x0
+  db 1001101b
+  db 11001111b
+  db 0x0
+
+gdt_data
+  dw 0xffff
+  dw 0x0
+  db 0x0
+  db 1001101b
+  db 11001111b
+  db 0x0
+gdt_end:
+
+gdt_descriptor:
+  dw gdt_end - gdt_start - 1
+  dd gdt_start
+
+CODE_SEG equ gdt_code - gdt_start
+DATA_SEG equ gdt_data - gdt_start
 
 section .bss
 resb 8192
