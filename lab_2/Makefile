@@ -4,7 +4,7 @@ all:
 	ld -m elf_i386 -T link.ld -o kernel kasm.o kc.o
 
 start:
-	qemu-system-i386 -kernel kernel
+	qemu-system-x86_64 -d trace:in_asm.out_asm -kernel kernel
 
 clear:
 	rm -rf *.o kernel

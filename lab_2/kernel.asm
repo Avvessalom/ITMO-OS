@@ -37,6 +37,11 @@ keyboard_handler:
 	iretd
 
 start:
+  xor ax, ax
+  mov ds, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
   cli
   xor ax, ax
   mov ds, ax
@@ -47,18 +52,13 @@ start:
   jmp protected
 
 
+[bits 32]
 protected:
-  mov ax, 0
-  mov ds, ax
-  mov es, ax
-  mov fs, ax
-  mov gs, ax
-  sti
   cli
   mov esp, stack_space
   call kernel_main
   hlt
-  
+
 gdt_start:
 
 gdt_null:
@@ -68,7 +68,8 @@ gdt_null:
 gdt_code:
   dw 0xffff
   dw 0x0
-  db 1001101b
+  dw 0x0
+  db 10011010b
   db 11001111b
   db 0x0
 
@@ -76,7 +77,7 @@ gdt_data
   dw 0xffff
   dw 0x0
   db 0x0
-  db 1001101b
+  db 10011010b
   db 11001111b
   db 0x0
 gdt_end:
@@ -87,6 +88,7 @@ gdt_descriptor:
 
 CODE_SEG equ gdt_code - gdt_start
 DATA_SEG equ gdt_data - gdt_start
+
 
 section .bss
 resb 8192
